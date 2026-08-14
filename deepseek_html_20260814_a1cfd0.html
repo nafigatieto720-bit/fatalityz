@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fatality — Панель управления</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Inter', system-ui, sans-serif; }
+        body {
+            background: #0d0d14;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .panel {
+            max-width: 480px;
+            width: 100%;
+            background: rgba(20, 20, 30, 0.92);
+            backdrop-filter: blur(12px);
+            border-radius: 56px;
+            padding: 3.2rem 2.5rem 2.5rem;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 70% 20%, rgba(255, 150, 50, 0.03) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .title {
+            font-size: 3.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff8c42 0%, #ff5e7d 50%, #ff8c42 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+            padding-top: 8px;
+        }
+        .subtitle {
+            color: #666688;
+            font-size: 0.85rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 1.2rem;
+        }
+        .btn-google {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 60px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #e8e8f0;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .btn-google:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: #4285f4;
+            box-shadow: 0 0 30px rgba(66, 133, 244, 0.1);
+        }
+        .btn-google svg { width: 24px; height: 24px; }
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: #555577;
+            font-size: 0.8rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .login-form { display: flex; flex-direction: column; gap: 0.8rem; }
+        .login-form input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 60px;
+            color: #e8e8f0;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .login-form input:focus {
+            border-color: rgba(255, 150, 50, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .login-form input::placeholder { color: #555577; font-weight: 300; }
+        .btn-login {
+            background: linear-gradient(135deg, #ff8c42 0%, #ff5e7d 100%);
+            border: none;
+            border-radius: 60px;
+            padding: 0.9rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0d0d14;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 8px 30px rgba(255,100,50,0.25); }
+        .btn-login:disabled { opacity: 0.4; cursor: not-allowed; }
+        .loader { display: none; justify-content: center; align-items: center; gap: 12px; margin: 1.5rem 0; }
+        .loader.active { display: flex; }
+        .loader .dot {
+            width: 14px; height: 14px; border-radius: 50%;
+            background: linear-gradient(135deg, #ff8c42, #ff5e7d);
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loader .dot:nth-child(1) { animation-delay: -0.32s; }
+        .loader .dot:nth-child(2) { animation-delay: -0.16s; }
+        .loader .dot:nth-child(3) { animation-delay: 0s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .dashboard {
+            display: none;
+            flex-direction: column;
+            gap: 1.2rem;
+            animation: fadeIn 0.6s ease;
+        }
+        .dashboard.active { display: flex; }
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .status-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 24px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .status-card .label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #666688;
+        }
+        .status-card .value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #e8e8f0;
+        }
+        .status-card .value.green { color: #22c55e; }
+        .status-card .value.orange { color: #ff8c42; }
+        .btn-download {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 60px;
+            padding: 0.7rem 1.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #aaaacc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            justify-content: center;
+        }
+        .btn-download:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e8e8f0;
+        }
+        .btn-download svg {
+            width: 18px; height: 18px;
+            fill: none; stroke: currentColor; stroke-width: 2;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .subscription {
+            font-size: 0.75rem;
+            color: #555577;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .subscription .highlight { color: #ff8c42; font-weight: 500; }
+        .subscription .green { color: #22c55e; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 480px) {
+            .panel { padding: 2rem 1.5rem; }
+            .title { font-size: 2.8rem; }
+            .status-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <div class="title">Fatality</div>
+    <div class="subtitle">Вход в панель управления</div>
+
+    <button class="btn-google" id="googleLoginBtn">
+        <svg viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Войти через Google
+    </button>
+
+    <div class="divider">или через логин</div>
+
+    <div class="login-form" id="loginForm">
+        <input type="text" id="loginInput" placeholder="Логин" autocomplete="username">
+        <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="current-password">
+        <button class="btn-login" id="loginBtn">Войти</button>
+    </div>
+
+    <div class="loader" id="loader">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="label">Статус</div>
+                <div class="value green" id="statusUser">Undetected</div>
+            </div>
+            <div class="status-card">
+                <div class="label">Срок подписки</div>
+                <div class="value orange" id="expiryDate">до 01.01.2026</div>
+            </div>
+        </div>
+
+        <button class="btn-download" id="downloadBtn">
+            <svg viewBox="0 0 24 24">
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                <polyline points="8 12 12 16 16 12"/>
+                <line x1="12" y1="2" x2="12" y2="16"/>
+            </svg>
+            Скачать лаунчер
+        </button>
+
+        <div class="subscription">
+            <span>Статус: <span class="green">Активна</span></span>
+            <span><span class="highlight" id="expiryText">до 09.01.2026</span></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        const CLIENT_ID = '849190665927-1ch46i0nv2ri7hj37qncp1fjd13vdeld.apps.googleusercontent.com';
+        const REDIRECT_URI = 'http://localhost:8000';
+
+        function signInWithGoogle() {
+            const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                'client_id=' + CLIENT_ID +
+                '&redirect_uri=' + REDIRECT_URI +
+                '&response_type=token' +
+                '&scope=email profile';
+            window.location.href = googleAuthUrl;
+        }
+
+        function handleGoogleCallback() {
+            const hash = window.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.substring(1));
+                const accessToken = params.get('access_token');
+                if (accessToken) {
+                    fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: { 'Authorization': 'Bearer ' + accessToken }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.querySelector('.login-form').style.display = 'none';
+                        document.querySelector('.divider').style.display = 'none';
+                        document.getElementById('googleLoginBtn').style.display = 'none';
+                        document.getElementById('dashboard').classList.add('active');
+                        document.getElementById('statusUser').textContent = '✅ ' + data.name;
+                    })
+                    .catch(err => alert('❌ Ошибка входа через Google!'));
+                }
+            }
+        }
+
+        document.getElementById('googleLoginBtn').addEventListener('click', signInWithGoogle);
+        handleGoogleCallback();
+
+        const loginInput = document.getElementById('loginInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const loader = document.getElementById('loader');
+        const dashboard = document.getElementById('dashboard');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const expiryText = document.getElementById('expiryText');
+        const expiryDate = document.getElementById('expiryDate');
+        const statusUser = document.getElementById('statusUser');
+
+        const LAUNCHER_URL = 'https://github.com/nafigatieto720-bit/fatality/releases/download/v1.0/Fatality.exe';
+
+        function setExpiryDate() {
+            const now = new Date();
+            const expiry = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+            const formatted = expiry.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            expiryText.textContent = 'до ' + formatted;
+            if (expiryDate) expiryDate.textContent = 'до ' + formatted;
+        }
+        setExpiryDate();
+
+        loginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const login = loginInput.value.trim();
+            const password = passwordInput.value.trim();
+            if (!login || !password) {
+                if (!login) loginInput.style.borderColor = '#ff5e7d';
+                if (!password) passwordInput.style.borderColor = '#ff5e7d';
+                setTimeout(() => {
+                    loginInput.style.borderColor = '';
+                    passwordInput.style.borderColor = '';
+                }, 800);
+                return;
+            }
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Вход...';
+            loader.classList.add('active');
+            setTimeout(() => {
+                document.querySelector('.login-form').style.display = 'none';
+                document.querySelector('.divider').style.display = 'none';
+                document.getElementById('googleLoginBtn').style.display = 'none';
+                loader.classList.remove('active');
+                dashboard.classList.add('active');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Войти';
+                statusUser.textContent = '✅ ' + login;
+            }, 2000);
+        });
+
+        loginInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+
+        downloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            try {
+                const a = document.createElement('a');
+                a.href = LAUNCHER_URL;
+                a.download = 'Fatality_Launcher.exe';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (err) {
+                alert('⚠️ Ссылка на лаунчер временно недоступна.');
+            }
+        });
+
+        console.log('🔗 CLIENT_ID:', CLIENT_ID);
+    })();
+</script>
+
+</body>
+</html>
